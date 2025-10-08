@@ -8,23 +8,23 @@ manifest:
       url-base: https://github.com/carrefinho
 
   projects:
-    # Use urob's ZMK fork (has HRM improvements)
+    # Pull ZMK from urob's fork (needed for timer-less HRMs)
     - name: zmk
       remote: urob
       revision: main
       import: app/west.yml
 
-    # Helper macros + key labels and extra behaviors
+    # Header helpers + behaviors
     - name: zmk-helpers
       remote: urob
       revision: main
 
-    # Extra behaviors (auto-layer, tri-state, etc.)
+    # Extra behaviors (auto-layer/tri-state) used for Num-Word, etc.
     - name: zmk-modules
       remote: urob
       revision: main
 
-    # Prospector module (keep this)
+    # Your dongle screen module (keep this)
     - name: prospector-zmk-module
       remote: carrefinho
       revision: main
