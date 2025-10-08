@@ -2,15 +2,32 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
+    - name: urob
+      url-base: https://github.com/urob
     - name: carrefinho
       url-base: https://github.com/carrefinho
+
   projects:
+    # Use urob's ZMK fork (has HRM improvements)
     - name: zmk
-      remote: zmkfirmware
+      remote: urob
       revision: main
       import: app/west.yml
+
+    # Helper macros + key labels and extra behaviors
+    - name: zmk-helpers
+      remote: urob
+      revision: main
+
+    # Extra behaviors (auto-layer, tri-state, etc.)
+    - name: zmk-modules
+      remote: urob
+      revision: main
+
+    # Prospector module (keep this)
     - name: prospector-zmk-module
       remote: carrefinho
       revision: main
+
   self:
     path: config
