@@ -8,12 +8,15 @@ manifest:
       url-base: https://github.com/urob
   projects:
     - name: zmk
-      remote: zmkfirmware
       remote: urob
       revision: main
       import: app/west.yml
     - name: prospector-zmk-module
       remote: carrefinho
       revision: main
+    - name: zmk-helpers
+      remote: urob
+      revision: main
+      path: modules/helpers
   self:
     path: config
