@@ -12,103 +12,419 @@
 
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
 
-#define Base        0
-#define Nav         1
-#define Sym         2
-#define Fun         3
-#define Game        4
-#define Gameplus    5
+// Include helpers for urob's features
+#include "../modules/helpers/helper.h"
+#include "../modules/helpers/key-labels/38.h"
 
-&mt {
-    quick-tap-ms = <100>;
-    global-quick-tap;
-    flavor = "tap-preferred";
-    tapping-term-ms = <170>;
-};
+#define Base 0
+#define Nav  1
+#define Num  2
+#define Fun  3
 
-&lt {
-    tapping-term-ms = <240>;
-    flavor = "balanced";
-    quick-tap-ms = <150>;
-};
+// Key position groups for TOTEM (38 keys)
+#define KEYS_L LT0 LT1 LT2 LT3 LT4 LM0 LM1 LM2 LM3 LM4 LB1 LB2 LB3 LB4 LB5  // left hand
+#define KEYS_R RT0 RT1 RT2 RT3 RT4 RM0 RM1 RM2 RM3 RM4 RB1 RB2 RB3 RB4 RB5  // right hand
+#define THUMBS LH2 LH1 LH0 RH0 RH1 RH2                                      // thumbs
 
 / {
     behaviors {
-        hm: homerow_mods {
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ UROB'S TIMELESS HOMEROW MODS                                         ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        // Left-hand homerow mods
+        hml: homerow_mods_left {
             compatible = "zmk,behavior-hold-tap";
-            label = "HOMEROW_MODS";
+            label = "HOMEROW_MODS_LEFT";
             #binding-cells = <2>;
-            flavor = "tap-preferred";
-            tapping-term-ms = <200>;
-            quick-tap-ms = <125>;
-            global-quick-tap;
+            flavor = "balanced";
+            tapping-term-ms = <280>;
+            quick-tap-ms = <175>;                // repeat on tap-into-hold
+            require-prior-idle-ms = <150>;       // requires typing streak
             bindings = <&kp>, <&kp>;
+            hold-trigger-key-positions = <KEYS_R THUMBS>;
+            hold-trigger-on-release;             // delay positional check until key-release
+        };
+
+        // Right-hand homerow mods
+        hmr: homerow_mods_right {
+            compatible = "zmk,behavior-hold-tap";
+            label = "HOMEROW_MODS_RIGHT";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <280>;
+            quick-tap-ms = <175>;
+            require-prior-idle-ms = <150>;
+            bindings = <&kp>, <&kp>;
+            hold-trigger-key-positions = <KEYS_L THUMBS>;
+            hold-trigger-on-release;
+        };
+
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ SMART SHIFTED PUNCTUATION                                            ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        // Comma becomes semicolon when shifted
+        comma_semi: comma_semicolon {
+            compatible = "zmk,behavior-mod-morph";
+            label = "COMMA_SEMICOLON";
+            #binding-cells = <0>;
+            bindings = <&kp COMMA>, <&kp SEMI>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        
+        // Dot becomes colon when shifted
+        dot_colon: dot_colon {
+            compatible = "zmk,behavior-mod-morph";
+            label = "DOT_COLON";
+            #binding-cells = <0>;
+            bindings = <&kp DOT>, <&kp COLON>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        
+        // Slash becomes question mark when shifted, exclamation when double-shifted
+        slash_qmark: slash_question {
+            compatible = "zmk,behavior-mod-morph";
+            label = "SLASH_QUESTION";
+            #binding-cells = <0>;
+            bindings = <&kp SLASH>, <&morph_qmark_excl>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        
+        morph_qmark_excl: question_exclamation {
+            compatible = "zmk,behavior-mod-morph";
+            label = "QMARK_EXCL";
+            #binding-cells = <0>;
+            bindings = <&kp QMARK>, <&kp EXCL>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ MAGIC SHIFT (Sticky / Hold / Capsword)                               ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        magic_shift: magic_shift {
+            compatible = "zmk,behavior-hold-tap";
+            label = "MAGIC_SHIFT";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            bindings = <&kp>, <&shift_morph>;
+        };
+        
+        shift_morph: shift_morph {
+            compatible = "zmk,behavior-mod-morph";
+            label = "SHIFT_MORPH";
+            #binding-cells = <0>;
+            bindings = <&sk LSHIFT>, <&caps_word>;
+            mods = <(MOD_LSFT)>;
+        };
+
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ NUM WORD (Smart Numbers Layer)                                       ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        smart_num: smart_num_layer {
+            compatible = "zmk,behavior-hold-tap";
+            label = "SMART_NUM";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            bindings = <&mo>, <&num_dance>;
+        };
+        
+        num_dance: num_dance {
+            compatible = "zmk,behavior-tap-dance";
+            label = "NUM_DANCE";
+            #binding-cells = <0>;
+            tapping-term-ms = <200>;
+            bindings = <&num_word>, <&none>;
+        };
+        
+        num_word: num_word {
+            compatible = "zmk,behavior-caps-word";
+            label = "NUM_WORD";
+            #binding-cells = <0>;
+            continue-list = <BACKSPACE DELETE DOT COMMA PLUS MINUS STAR FSLH EQUAL 
+                           N0 N1 N2 N3 N4 N5 N6 N7 N8 N9
+                           KP_N0 KP_N1 KP_N2 KP_N3 KP_N4 KP_N5 KP_N6 KP_N7 KP_N8 KP_N9>;
         };
     };
 
-    combos { compatible = "zmk,combos"; };
+    // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    // ┃ COMBOS (Vertical key combos with misfire prevention)                     ┃
+    // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+    
+    combos {
+        compatible = "zmk,combos";
+        
+        // Top row symbols (replicating number row symbols)
+        combo_excl {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <0 10>;  // Q + A = !
+            bindings = <&kp EXCL>;
+            layers = <Base>;
+        };
+        
+        combo_at {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <1 11>;  // W + S = @
+            bindings = <&kp AT>;
+            layers = <Base>;
+        };
+        
+        combo_hash {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <2 12>;  // E + D = #
+            bindings = <&kp HASH>;
+            layers = <Base>;
+        };
+        
+        combo_dollar {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <3 13>;  // R + F = $
+            bindings = <&kp DLLR>;
+            layers = <Base>;
+        };
+        
+        combo_percent {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <4 14>;  // T + G = %
+            bindings = <&kp PRCNT>;
+            layers = <Base>;
+        };
+        
+        combo_caret {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <5 15>;  // Y + H = ^
+            bindings = <&kp CARET>;
+            layers = <Base>;
+        };
+        
+        combo_ampersand {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <6 16>;  // U + J = &
+            bindings = <&kp AMPS>;
+            layers = <Base>;
+        };
+        
+        combo_star {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <7 17>;  // I + K = *
+            bindings = <&kp STAR>;
+            layers = <Base>;
+        };
+        
+        combo_lpar {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <8 18>;  // O + L = (
+            bindings = <&kp LPAR>;
+            layers = <Base>;
+        };
+        
+        combo_rpar {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <9 19>;  // P + ; = )
+            bindings = <&kp RPAR>;
+            layers = <Base>;
+        };
+        
+        // Bottom row symbols (symmetric to top)
+        combo_grave {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <10 21>;  // A + Z = `
+            bindings = <&kp GRAVE>;
+            layers = <Base>;
+        };
+        
+        combo_minus {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <11 22>;  // S + X = -
+            bindings = <&kp MINUS>;
+            layers = <Base>;
+        };
+        
+        combo_equal {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <12 23>;  // D + C = =
+            bindings = <&kp EQUAL>;
+            layers = <Base>;
+        };
+        
+        combo_lbkt {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <13 24>;  // F + V = [
+            bindings = <&kp LBKT>;
+            layers = <Base>;
+        };
+        
+        combo_rbkt {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <14 25>;  // G + B = ]
+            bindings = <&kp RBKT>;
+            layers = <Base>;
+        };
+        
+        combo_bslh {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <15 26>;  // H + N = \
+            bindings = <&kp BSLH>;
+            layers = <Base>;
+        };
+        
+        combo_pipe {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <16 27>;  // J + M = |
+            bindings = <&kp PIPE>;
+            layers = <Base>;
+        };
+        
+        combo_under {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <17 28>;  // K + , = _
+            bindings = <&kp UNDER>;
+            layers = <Base>;
+        };
+        
+        combo_plus {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <18 29>;  // L + . = +
+            bindings = <&kp PLUS>;
+            layers = <Base>;
+        };
+        
+        // Horizontal combos for brackets
+        combo_lbrc {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <3 4>;  // R + T = {
+            bindings = <&kp LBRC>;
+            layers = <Base>;
+        };
+        
+        combo_rbrc {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <5 6>;  // Y + U = }
+            bindings = <&kp RBRC>;
+            layers = <Base>;
+        };
+        
+        // Quick access combos
+        combo_esc {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <0 1>;  // Q + W = ESC
+            bindings = <&kp ESC>;
+            layers = <Base>;
+        };
+        
+        combo_tab {
+            timeout-ms = <30>;
+            require-prior-idle-ms = <150>;
+            key-positions = <10 11>;  // A + S = TAB
+            bindings = <&kp TAB>;
+            layers = <Base>;
+        };
+    };
 
     keymap {
         compatible = "zmk,keymap";
 
-        Base {
+      //   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ BASE LAYER                                                           ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        base_layer {
             display-name = "Base";
-            bindings = <
-              &kp Q       &kp W       &kp E          &kp R         &kp T        &kp Y    &kp U        &kp I        &kp O       &kp P
-              &hm LGUI A  &hm LALT S  &hm LCTRL D    &hm LSHIFT F  &kp G        &kp H    &hm RSHFT J  &hm RCTRL K  &hm RALT L  &hm RGUI SEMICOLON
-&lt 3 ESCAPE  &kp Z       &kp X       &kp C          &kp V         &kp B        &kp N    &kp M        &kp COMMA    &kp DOT     &kp SLASH           &kp APOSTROPHE
-                                      &mt LCTRL DEL  &lt 1 TAB     &kp SPACE    &kp RET  &lt 2 BSPC   &kp MINUS
+            bindings = 
+        // ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮   ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮
+             &kp Q         &kp W         &kp E         &kp R         &kp T             &kp Y         &kp U         &kp I         &kp O         &kp P
+        // ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+             &hml LGUI A   &hml LALT S   &hml LCTRL D  &hml LSHIFT F &kp G             &kp H         &hmr RSHIFT J &hmr RCTRL K  &hmr RALT L   &hmr RGUI SEMI
+        // ╰─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┼─────────────╮
+             &lt Fun ESC   &kp Z         &kp X         &kp C         &kp V         &kp B             &kp N         &kp M         &comma_semi   &dot_colon    &slash_qmark  &kp APOSTROPHE
+        // ╰─────────────┴─────────────┴─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┴─────────────┴─────────────╯
+                                                       &trans        &lt Nav SPACE &magic_shift LSHIFT 0    &smart_num Num 0  &lt Nav SPACE  &trans
+        //                                           ╰─────────────┴─────────────┴─────────────╯   ╰─────────────┴─────────────┴─────────────╯
             >;
         };
 
-        Nav {
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ NAVIGATION LAYER                                                      ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        nav_layer {
             display-name = "Nav";
-            bindings = <
-              &kp TILDE       &trans     &kp UP_ARROW  &trans     &kp LBRC    &kp RBRC  &kp NUMBER_7  &kp NUMBER_8  &kp NUMBER_9  &kp NUMBER_0
-              &kp LEFT_SHIFT  &kp LEFT   &kp DOWN      &kp RIGHT  &kp LBKT    &kp RBKT  &kp NUMBER_4  &kp NUMBER_5  &kp NUMBER_6  &kp MINUS
-&kp LEFT_ALT  &kp LEFT_WIN    &kp MINUS  &trans        &kp PLUS   &kp LPAR    &kp RPAR  &kp NUMBER_1  &kp NUMBER_2  &kp NUMBER_3  &kp KP_MULTIPLY  &kp PLUS
-                                         &trans        &trans     &trans      &trans    &trans        &kp DOT
+            bindings = 
+        // ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮   ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮
+             &kp TILDE     &trans        &kp UP        &trans        &kp LBRC          &kp RBRC      &kp N7        &kp N8        &kp N9        &kp N0
+        // ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+             &kp LSHIFT    &kp LEFT      &kp DOWN      &kp RIGHT     &kp LBKT          &kp RBKT      &kp N4        &kp N5        &kp N6        &kp MINUS
+        // ╰─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┼─────────────╮
+             &kp LALT      &kp LGUI      &kp MINUS     &trans        &kp PLUS      &kp LPAR          &kp RPAR      &kp N1        &kp N2        &kp N3        &kp KP_MULTIPLY &kp PLUS
+        // ╰─────────────┴─────────────┴─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┴─────────────┴─────────────╯
+                                                       &trans        &trans        &trans            &trans        &trans        &kp DOT
+        //                                           ╰─────────────┴─────────────┴─────────────╯   ╰─────────────┴─────────────┴─────────────╯
             >;
         };
 
-        Sym {
-            display-name = "Sym";
-            bindings = <
-                &kp EXCL  &kp AT  &kp HASH  &kp DOLLAR  &kp PERCENT    &kp CARET  &kp AMPERSAND  &kp KP_ASTERISK  &kp SQT  &kp DQT
-                &trans    &trans  &trans    &trans      &trans         &trans     &trans         &trans           &trans   &trans
-&studio_unlock  &trans    &trans  &trans    &trans      &trans         &kp UNDER  &kp EQUAL      &trans           &trans   &kp SLASH  &kp HOME
-                                  &trans    &trans      &trans         &trans     &trans         &trans
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ NUMBER LAYER (Auto-deactivates via num_word)                         ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        num_layer {
+            display-name = "Num";
+            bindings = 
+        // ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮   ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮
+             &trans        &kp N7        &kp N8        &kp N9        &kp PLUS          &trans        &trans        &trans        &trans        &trans
+        // ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+             &kp N0        &kp N4        &kp N5        &kp N6        &kp MINUS         &trans        &trans        &trans        &trans        &trans
+        // ╰─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┼─────────────╮
+             &trans        &kp N1        &kp N2        &kp N3        &kp STAR      &kp FSLH          &trans        &trans        &trans        &trans        &trans        &trans
+        // ╰─────────────┴─────────────┴─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┴─────────────┴─────────────╯
+                                                       &kp DOT       &kp EQUAL     &trans            &trans        &trans        &trans
+        //                                           ╰─────────────┴─────────────┴─────────────╯   ╰─────────────┴─────────────┴─────────────╯
             >;
         };
 
-        Fun {
+        // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        // ┃ FUNCTION LAYER                                                        ┃
+        // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        
+        fun_layer {
             display-name = "Fun";
-            bindings = <
-        &bootloader  &trans  &trans  &trans  &to 4     &trans  &trans  &trans  &kp END  &kp F1
-        &trans       &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans   &kp F10
-&trans  &trans       &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans   &kp F20  &kp F7
-                             &trans  &trans  &trans    &trans  &trans  &trans
-            >;
-        };
-
-        Gaming {
-            display-name = "Game";
-            bindings = <
-            &kp Z           &kp X  &kp C      &kp V         &sl 5     &trans  &trans  &trans  &trans  &trans
-            &kp TAB         &kp Q  &kp W      &kp E         &kp R     &trans  &trans  &trans  &trans  &trans
-&kp ESCAPE  &kp LEFT_SHIFT  &kp A  &kp S      &kp D         &kp F     &trans  &trans  &trans  &trans  &trans  &trans
-                                   &kp LCTRL  &kp LEFT_ALT  &trans    &trans  &trans  &trans
-            >;
-        };
-
-        Gaming+ {
-            display-name = "Game+";
-            bindings = <
-        &kp F10  &kp NUMBER_1  &kp NUMBER_2  &kp NUMBER_3  &kp T     &kp RA(RC(Y))  &kp RA(RC(U))  &trans  &trans  &kp LC(RA(DEL))
-        &kp L    &kp O         &kp Y         &kp K         &kp G     &kp F5         &kp F7         &trans  &trans  &kp F12
-&trans  &to 0    &trans        &trans        &trans        &trans    &trans         &trans         &trans  &trans  &kp F22          &kp LA(F4)
-                               &kp J         &kp I         &kp M     &trans         &trans         &trans
+            bindings = 
+        // ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮   ╭─────────────┬─────────────┬─────────────┬─────────────┬─────────────╮
+             &bootloader   &trans        &trans        &trans        &trans            &trans        &kp F7        &kp F8        &kp F9        &kp F12
+        // ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+             &bt BT_CLR    &bt BT_PRV    &bt BT_NXT    &trans        &trans            &trans        &kp F4        &kp F5        &kp F6        &kp F11
+        // ╰─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┼─────────────╮
+             &trans        &trans        &trans        &trans        &trans        &trans            &trans        &kp F1        &kp F2        &kp F3        &kp F10       &trans
+        // ╰─────────────┴─────────────┴─────────────┼─────────────┼─────────────┼─────────────┤   ├─────────────┼─────────────┼─────────────┼─────────────┴─────────────┴─────────────╯
+                                                       &trans        &trans        &trans            &trans        &trans        &trans
+        //                                           ╰─────────────┴─────────────┴─────────────╯   ╰─────────────┴─────────────┴─────────────╯
             >;
         };
     };
